@@ -42,12 +42,34 @@ const CreateLeagueDialog = ({ open, onOpenChange, onLeagueCreated }: CreateLeagu
 
       const code = generateCode();
 
-      // Create league (avoid RETURNING to bypass RLS SELECT)
-      const leagueId = uuidv4();
-      const { error: leagueError } = await (supabase as any)
+      // Try using RPC function first (if it exists)
+      const { data: leagueId, error: rpcError } = await supabase.rpc(
+        "create_league_with_member",
+        {
+          _name: name,
+          _code: code,
+          _description: description || null,
+        }
+      );
+
+      if (!rpcError && leagueId) {
+        // Success using RPC function
+        toast({
+          title: "¡Liga creada!",
+          description: `Tu código de liga es: ${code}`,
+        });
+        setName("");
+        setDescription("");
+        onLeagueCreated();
+        return;
+      }
+
+      // Fallback to direct insert (will work after policy is added)
+      const leagueIdFallback = uuidv4();
+      const { error: leagueError } = await supabase
         .from("leagues")
         .insert({
-          id: leagueId,
+          id: leagueIdFallback,
           name,
           description,
           code,
@@ -57,10 +79,10 @@ const CreateLeagueDialog = ({ open, onOpenChange, onLeagueCreated }: CreateLeagu
       if (leagueError) throw leagueError;
 
       // Add creator as member
-      const { error: memberError } = await (supabase as any)
+      const { error: memberError } = await supabase
         .from("league_members")
         .insert({
-          league_id: leagueId,
+          league_id: leagueIdFallback,
           user_id: user.id,
           role: "ADMIN",
         });
@@ -76,10 +98,11 @@ const CreateLeagueDialog = ({ open, onOpenChange, onLeagueCreated }: CreateLeagu
       setDescription("");
       onLeagueCreated();
     } catch (error: any) {
+      console.error("Error creating league:", error);
       toast({
         variant: "destructive",
         title: "Error",
-        description: error.message,
+        description: error.message || "No se pudo crear la liga. Asegúrate de ejecutar el SQL de configuración en Supabase.",
       });
     } finally {
       setIsLoading(false);

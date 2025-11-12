@@ -52,7 +52,13 @@ const Dashboard = () => {
   const loadLeagues = async () => {
     setIsLoading(true);
     try {
-      const { data, error } = await (supabase as any)
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        navigate("/auth");
+        return;
+      }
+
+      const { data, error } = await supabase
         .from("league_members")
         .select(`
           league_id,
@@ -64,6 +70,7 @@ const Dashboard = () => {
             created_at
           )
         `)
+        .eq("user_id", user.id)
         .order("joined_at", { ascending: false });
 
       if (error) throw error;
@@ -71,10 +78,11 @@ const Dashboard = () => {
       const leaguesData = data?.map((item: any) => item.leagues).filter(Boolean) || [];
       setLeagues(leaguesData);
     } catch (error: any) {
+      console.error("Error loading leagues:", error);
       toast({
         variant: "destructive",
         title: "Error",
-        description: "No se pudieron cargar las ligas",
+        description: error.message || "No se pudieron cargar las ligas",
       });
     } finally {
       setIsLoading(false);
