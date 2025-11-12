@@ -34,7 +34,7 @@ const JoinLeagueDialog = ({ open, onOpenChange, onLeagueJoined }: JoinLeagueDial
       if (!user) throw new Error("No hay sesión activa");
 
       // Find league by code
-      const { data: league, error: leagueError } = await supabase
+      const { data: league, error: leagueError } = await (supabase as any)
         .from("leagues")
         .select("id")
         .eq("code", code.toUpperCase())
@@ -44,7 +44,7 @@ const JoinLeagueDialog = ({ open, onOpenChange, onLeagueJoined }: JoinLeagueDial
       if (!league) throw new Error("Código de liga inválido");
 
       // Check if already a member
-      const { data: existing } = await supabase
+      const { data: existing } = await (supabase as any)
         .from("league_members")
         .select("id")
         .eq("league_id", league.id)
@@ -56,7 +56,7 @@ const JoinLeagueDialog = ({ open, onOpenChange, onLeagueJoined }: JoinLeagueDial
       }
 
       // Add as member
-      const { error: memberError } = await supabase
+      const { error: memberError } = await (supabase as any)
         .from("league_members")
         .insert({
           league_id: league.id,

@@ -42,7 +42,7 @@ const CreateLeagueDialog = ({ open, onOpenChange, onLeagueCreated }: CreateLeagu
       const code = generateCode();
 
       // Create league
-      const { data: league, error: leagueError } = await supabase
+      const { data: league, error: leagueError } = await (supabase as any)
         .from("leagues")
         .insert({
           name,
@@ -53,10 +53,14 @@ const CreateLeagueDialog = ({ open, onOpenChange, onLeagueCreated }: CreateLeagu
         .select()
         .single();
 
+      if (!league) {
+        throw new Error("No se pudo crear la liga");
+      }
+
       if (leagueError) throw leagueError;
 
       // Add creator as member
-      const { error: memberError } = await supabase
+      const { error: memberError } = await (supabase as any)
         .from("league_members")
         .insert({
           league_id: league.id,

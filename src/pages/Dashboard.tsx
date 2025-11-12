@@ -52,7 +52,7 @@ const Dashboard = () => {
   const loadLeagues = async () => {
     setIsLoading(true);
     try {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("league_members")
         .select(`
           league_id,
