@@ -14,6 +14,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
+import { v4 as uuidv4 } from "uuid";
 
 interface CreateLeagueDialogProps {
   open: boolean;
@@ -41,21 +42,17 @@ const CreateLeagueDialog = ({ open, onOpenChange, onLeagueCreated }: CreateLeagu
 
       const code = generateCode();
 
-      // Create league
-      const { data: league, error: leagueError } = await (supabase as any)
+      // Create league (avoid RETURNING to bypass RLS SELECT)
+      const leagueId = uuidv4();
+      const { error: leagueError } = await (supabase as any)
         .from("leagues")
         .insert({
+          id: leagueId,
           name,
           description,
           code,
           owner_id: user.id,
-        })
-        .select()
-        .single();
-
-      if (!league) {
-        throw new Error("No se pudo crear la liga");
-      }
+        });
 
       if (leagueError) throw leagueError;
 
@@ -63,7 +60,7 @@ const CreateLeagueDialog = ({ open, onOpenChange, onLeagueCreated }: CreateLeagu
       const { error: memberError } = await (supabase as any)
         .from("league_members")
         .insert({
-          league_id: league.id,
+          league_id: leagueId,
           user_id: user.id,
           role: "ADMIN",
         });
